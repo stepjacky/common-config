@@ -1,0 +1,281 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+      "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+          "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<!-- ResultDescriptor already added -->
+<hibernate-mapping default-cascade="all"
+  package="com.opensymphony.entity"
+>
+	<!-- Workflows -->
+	<class name="WorkflowName">
+		<id name="workflowName" unsaved-value="any">
+			<generator class="assigned"/>
+		</id>
+		<property name="imagePath" />
+		<many-to-one name="workflowDescriptor"  cascade="all-delete-orphan" unique="true"/>		
+	</class>
+
+	<!-- AbstractDescriptor root -->
+	<class name="AbstractDescriptor" >
+		<id name="entityId" unsaved-value="0">
+			<generator class="native"/>
+		</id>
+		
+		<!-- discriminator column="class"/-->
+		<property name="id" column="id" />
+		<many-to-one name="parent" class="AbstractDescriptor" cascade="none"/>
+		<!-- ActionDescriptor -->
+		<joined-subclass name="ActionDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="view" column="viewProperty" />
+			<property name="name" column="name"/>
+			<property name="finish" column="finish"/>
+			<property name="autoExecute" column="autoExecute" />
+			<property name="common" column="common"/>
+			<many-to-one name="restriction" />
+			<many-to-one name="unconditionalResult"/>
+			<list name="conditionalResults" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentActionDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="ConditionalResultDescriptor" />					
+			</list>			
+			<list name="validators" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentActionDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="ValidatorDescriptor" />					
+			</list>			
+			<list name="postFunctions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentActionDescrPost"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>			
+			<list name="preFunctions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentActionDescrPre"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>						
+			<map name="metaAttributes" table="actionMetaAttributes" lazy="false" >
+				<key column="entityCode"/>
+				<index column="keyName" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>
+		</joined-subclass>
+		<!-- ResultDescriptor -->
+		<joined-subclass name="ResultDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="owner" />
+			<property name="oldStatus" access="field"/>
+			<property name="displayName" access="field"/>
+			<property name="status"/>
+			<property name="split"/>
+			<property name="step" />
+			<property name="join" column="join_id" />
+			<list name="postFunctions" lazy="false" cascade="all-delete-orphan" access="field">
+				<key column="parentResultDescrPost"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>			
+			<list name="preFunctions" lazy="false" cascade="all-delete-orphan" access="field">
+				<key column="parentResultDescrPre"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>						
+			<!-- ConditionalResultDescriptor -->
+			<joined-subclass name="ConditionalResultDescriptor">
+				<key column="conditionalResultDescriptorId"/>
+				<list name="conditions" lazy="false" access="field" cascade="all-delete-orphan">
+					<key column="parentConditionalResultDesc"/>
+					<index column="listOrder"/>
+					<one-to-many class="ConditionsDescriptor" />					
+				</list>
+			</joined-subclass>
+		</joined-subclass>
+		<!-- ConditionDescriptor -->
+		<joined-subclass name="ConditionDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="name" column="name" />
+			<property name="type" column="type" />
+			<property name="negate" column="negate" />
+			<map name="args" table="conditionsargs" lazy="false" access="field">
+				<key column="entityCode"/>
+				<index column="name" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>			
+		</joined-subclass>
+		<!-- ConditionsDescriptor -->
+		<joined-subclass name="ConditionsDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="type" column="type" />
+			
+			<list name="conditions" lazy="false" cascade="all-delete-orphan">
+				<key column="parentConditionsDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="AbstractDescriptor" />					
+			</list>
+		</joined-subclass>
+		<!-- FunctionDescriptor -->
+		<joined-subclass name="FunctionDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="name" column="name" />
+			<property name="type" column="type" />
+			<map name="args" table="functionsargs" lazy="false" access="field">
+				<key column="entityCode"/>
+				<index column="name" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>			
+        </joined-subclass>
+		<!-- JoinDescriptor -->
+		<joined-subclass name="JoinDescriptor">
+			<key column="abstractDescriptorId"/>
+			<many-to-one name="result" column="result" class="ResultDescriptor"/>
+			<list name="conditions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentJoinDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="ConditionsDescriptor" />					
+			</list>			
+		</joined-subclass>
+		<!-- PermissionDescriptor -->
+		<joined-subclass name="PermissionDescriptor">
+			<key column="abstractDescriptorId"/>
+			<many-to-one name="restriction" class="RestrictionDescriptor" />
+			<property name="name" column="name" />
+		</joined-subclass>
+		<!-- RegisterDescriptor -->
+		<joined-subclass name="RegisterDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="type" column="type" />
+			<property name="variableName" column="variableName" />
+			<map name="args" table="registersargs" lazy="false" access="field">
+				<key column="entityCode"/>
+				<index column="name" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>			
+		</joined-subclass>
+		<!-- RestrictionDescriptor -->
+		<joined-subclass name="RestrictionDescriptor">
+			<key column="abstractDescriptorId"/>
+			<list name="conditions" lazy="false" access="field" 
+			cascade="all-delete-orphan">
+				<key column="parentRestrictionDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="ConditionsDescriptor" />					
+			</list>			
+		</joined-subclass>
+		<!-- SplitDescriptor -->
+		<joined-subclass name="SplitDescriptor">
+			<key column="abstractDescriptorId"/>
+			<list name="results" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentSplitDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="ResultDescriptor" />					
+			</list>			
+		</joined-subclass>
+		<!-- StepDescriptor -->
+		<joined-subclass name="StepDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="name" />
+			<property name="hasActions" access="field" />
+			<list name="actions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentStepDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="ActionDescriptor" />					
+			</list>			
+			<list name="permissions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentStepDescriptor"/>
+				<index column="listOrder"/>
+				<one-to-many class="PermissionDescriptor" />					
+			</list>			
+			<list name="commonActions" table="commonactions2step" lazy="false" access="field">
+				<key column="parentStepDescriptor"/>
+				<index column="listOrder"/>
+				<element column="value" type="integer"/>
+			</list>			
+			<list name="postFunctions" lazy="false" cascade="all-delete-orphan">
+				<key column="parentStepDescriptorPost"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>			
+			<list name="preFunctions" lazy="false" cascade="all-delete-orphan">
+				<key column="parentStepDescriptorPre"/>
+				<index column="listOrder"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</list>			
+			<map name="metaAttributes" table="stepMetaAttributes" lazy="false" >
+				<key column="entityCode"/>
+				<index column="keyName" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>
+		</joined-subclass>
+		<!-- ValidatorDescriptor -->
+		<joined-subclass name="ValidatorDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="name" column="name" />
+			<property name="type" column="type" />
+			<map name="args" table="validatorsargs" lazy="false" access="field">
+				<key column="entityCode"/>
+				<index column="name" type ="string"/>
+				<element column="value" 
+				type="string" 
+				length="500"/>
+			</map>			
+		</joined-subclass>
+		<!-- WorkflowDescriptor -->
+		<joined-subclass name="WorkflowDescriptor">
+			<key column="abstractDescriptorId"/>
+			<property name="name" />
+			<many-to-one name="globalConditions" lazy="false" cascade="all" class="ConditionsDescriptor" access="field"/>
+			<list name="commonActionsList" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescrCommonList"/>
+				<index column="listOrder"/>
+				<one-to-many class="ActionDescriptor" />					
+			</list>			
+			<list name="globalActions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescGlobal"/>
+				<index column="listOrder"/>
+				<one-to-many class="ActionDescriptor" />					
+			</list>			
+			<list name="initialActions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescrInitial"/>
+				<index column="listOrder"/>
+				<one-to-many class="ActionDescriptor" />					
+			</list>			
+			<list name="joins" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="JoinDescriptor" />					
+			</list>			
+			<list name="registers" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="RegisterDescriptor" />
+			</list>			
+			<list name="splits" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="SplitDescriptor" />					
+			</list>			
+			<list name="steps" lazy="false" outer-join="true" batch-size="10" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescr"/>
+				<index column="listOrder"/>
+				<one-to-many class="StepDescriptor" />					
+			</list>			
+			<map name="commonActions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescrCommonMap"/>
+				<index column="id" type="integer"/>
+				<one-to-many class="ActionDescriptor" />					
+			</map>			
+			<map name="metaAttributes" table="workflowMetaAttributes" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="entityCode"/>
+				<index column="keyName" type ="string"/>
+				<element column="value" type="string" length="500"/>
+			</map>
+			<map name="timerFunctions" lazy="false" access="field" cascade="all-delete-orphan">
+				<key column="parentWorkflowDescr"/>
+				<index column="id" type="integer"/>
+				<one-to-many class="FunctionDescriptor" />					
+			</map>						
+		</joined-subclass>
+	</class>
+</hibernate-mapping>
+
